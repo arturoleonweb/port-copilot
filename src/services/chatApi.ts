@@ -6,10 +6,14 @@ export async function* streamChat(
   request: ChatRequest,
   signal?: AbortSignal,
 ): AsyncGenerator<ChatStreamEvent> {
-  const response = await fetch(`${API_URL}/api/chat/stream`, {
+  const bodyMock = {
+    content: request.message,
+    conversation_id: request.conversationId,
+  };
+  const response = await fetch(`${API_URL}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
+    body: JSON.stringify(bodyMock),
     signal,
   });
 
