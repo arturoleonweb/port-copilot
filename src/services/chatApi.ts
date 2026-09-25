@@ -6,14 +6,13 @@ export async function* streamChat(
   request: ChatRequest,
   signal?: AbortSignal,
 ): AsyncGenerator<ChatStreamEvent> {
-  const bodyMock = {
-    content: request.message,
-    conversation_id: request.conversationId,
-  };
   const response = await fetch(`${API_URL}/messages`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(bodyMock),
+    headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+    body: JSON.stringify({
+      content: request.message,
+      conversation_id: request.conversationId  
+    }),
     signal,
   });
 
@@ -43,14 +42,20 @@ export async function* streamChat(
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        // Starter protocol: one JSON event per line.
-        // If FastAPI uses SSE, adapt this parser to "data: {...}".
-        yield JSON.parse(trimmed) as ChatStreamEvent;
+        // // Starter protocol: one JSON event per line.
+        // // If FastAPI uses SSE, adapt this parser to "data: {...}".
+        // yield JSON.parse(trimmed) as ChatStreamEvent;
+        const event = JSON.parse(trimmed) as ChatStreamEvent;
+
+        yield event;
       }
     }
 
-    if (buffer.trim()) {
-      yield JSON.parse(buffer.trim()) as ChatStreamEvent;
+    // Procesar cualquier contenido que haya quedado en el buffer
+    const trimmed = buffer.trim();
+
+    if (trimmed) {
+      yield JSON.parse(trimmed) as ChatStreamEvent;
     }
   } finally {
     reader.releaseLock();
